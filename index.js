@@ -1,34 +1,49 @@
-import express from "express";
-import { createServer } from "http";
-import { Server } from "socket.io";
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 
 const app = express();
-const port = 3000;
+const server = http.createServer(app);
+const io = new Server(server);
 
-const server = createServer(app);
-const io = new Server(server, {
-    cors: {
-        origin: "*",
+let raspberryPiSocket = null; // Will hold the Raspberry Pi client connection
+
+// Serve your frontend here (optional)
+app.get('/', (req, res) => {
+  console.log("Server")
+});
+
+// When a client (browser or RPi) connects
+io.on('connection', (socket) => {
+  console.log('Client connected:', socket.id);
+
+  // Handle Raspberry Pi client connection
+  socket.on('register-rpi', () => {
+    raspberryPiSocket = socket; // Save RPi socket
+    console.log('Raspberry Pi registered');
+  });
+
+  // Handle order from the browser
+  socket.on('place-order', (order) => {
+    console.log('Order received from browser:', order);
+
+    // Forward the order to the Raspberry Pi if it's connected
+    if (raspberryPiSocket) {
+      raspberryPiSocket.emit('new-order', order);
+    } else {
+      console.log('Raspberry Pi not connected');
     }
+  });
+
+  // Handle disconnections
+  socket.on('disconnect', () => {
+    if (socket === raspberryPiSocket) {
+      raspberryPiSocket = null;
+      console.log('Raspberry Pi disconnected');
+    }
+  });
 });
 
-app.get("/", (req, res) => {
-    res.send("Hello from API");
-});
-
-io.on("connection", (socket) => {
-    console.log("User connected - ", socket.id);
-
-    socket.on("order", (data) => {
-        console.log(data);
-        io.emit("message", data);
-    });
-
-    socket.on("disconnect", () => {
-        console.log("User disconnected - ", socket.id);
-    });
-});
-
-server.listen(port, () => {
-    console.log("Server is running on port " + port);
+server.listen(3000, () => {
+  console.log('Server listening on port 3000');
 });
