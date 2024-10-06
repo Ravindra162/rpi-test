@@ -11,6 +11,8 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "express": "^4.21.0"
+    "chess.js": "^1.0.0-beta.8",
+    "express": "^4.21.0",
+    "socket.io": "^4.8.0"
   }
 }
